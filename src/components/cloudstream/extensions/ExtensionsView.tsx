@@ -607,10 +607,10 @@ export function ExtensionsView() {
         )}
       </section>
 
-      {/* Stats bar (sticky bottom) */}
+      {/* Stats bar (footer — pushed down naturally by content, not overlaying) */}
       <div
         className={cn(
-          "sticky bottom-0 z-20 -mx-3 mt-auto border-t border-[#3d3d3d] bg-[#1e1e1e]/95 px-4 py-3 backdrop-blur sm:-mx-0 sm:rounded-t-lg"
+          "-mx-3 mt-6 border-t border-[#3d3d3d] bg-[#1e1e1e] px-4 py-3 sm:-mx-0 sm:rounded-t-lg"
         )}
         role="status"
         aria-label="Extensions summary"

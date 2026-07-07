@@ -9,7 +9,6 @@ import {
   Puzzle as PuzzleIcon,
   ChevronDown,
   Check,
-  Cloud,
   Layers,
 } from "lucide-react";
 
@@ -92,10 +91,17 @@ export function TopNav() {
           aria-label="CloudStream home"
         >
           <span
-            className="flex size-8 items-center justify-center rounded-md bg-[#7664ed] shadow-md shadow-[#7664ed]/30"
+            className="flex size-8 items-center justify-center rounded-md overflow-hidden shadow-md shadow-[#7664ed]/30"
             aria-hidden="true"
           >
-            <Cloud className="size-5 text-white" />
+            {/* Exact CloudStream Android app logo (fetched from upstream recloudstream/cloudstream) */}
+            <img
+              src="/cloudstream-logo.png"
+              alt="CloudStream"
+              className="h-8 w-8 object-cover"
+              width={32}
+              height={32}
+            />
           </span>
           <span className="hidden text-lg font-semibold tracking-tight text-white sm:inline">
             Cloud<span className="text-[#7664ed]">Stream</span>

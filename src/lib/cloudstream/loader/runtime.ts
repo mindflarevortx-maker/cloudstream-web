@@ -95,6 +95,10 @@ export interface Cs3Runtime {
   unpackJs(packedScript: string): string;
   /** Frozen object mirroring the TvType enum — `{ Movie: "Movie", ... }`. */
   readonly TvType: Readonly<Record<keyof typeof TvType, string>>;
+  /** Convert a 0–10 float rating to a Score object (for SearchResponse.score). */
+  scoreFromFloat(value: number): { toInt: () => number; toFloat: () => number; compareTo: (other: unknown) => number };
+  /** Convert an integer rating (0–10) to a Score object. */
+  scoreFromInt(value: number): { toInt: () => number; toFloat: () => number; compareTo: (other: unknown) => number };
 }
 
 /* ------------------------------------------------------------------ */
@@ -393,6 +397,40 @@ export function createCs3Runtime(client?: HttpClient): Cs3Runtime {
     Audiobook: TvType.Audiobook,
   }) as Readonly<Record<keyof typeof TvType, string>>;
 
+  // Score helpers — let JS providers build Score objects without importing the
+  // Score class directly. Matches the Score API (toInt, toFloat, compareTo).
+  const scoreFromFloat = (value: number) => {
+    const clamped = Math.max(0, Math.min(10, value));
+    const intVal = BigInt(Math.round(clamped * 1e8));
+    return {
+      toInt: () => Number(intVal),
+      toFloat: () => Number(intVal) / 1e8,
+      compareTo: (other: unknown) => {
+        const otherInt = typeof other === "object" && other !== null && "toInt" in other
+          ? BigInt((other as { toInt: () => number }).toInt())
+          : 0n;
+        if (intVal < otherInt) return -1;
+        if (intVal > otherInt) return 1;
+        return 0;
+      },
+    };
+  };
+  const scoreFromInt = (value: number) => {
+    const intVal = BigInt(Math.round(value));
+    return {
+      toInt: () => Number(intVal),
+      toFloat: () => Number(intVal) / 1e8,
+      compareTo: (other: unknown) => {
+        const otherInt = typeof other === "object" && other !== null && "toInt" in other
+          ? BigInt((other as { toInt: () => number }).toInt())
+          : 0n;
+        if (intVal < otherInt) return -1;
+        if (intVal > otherInt) return 1;
+        return 0;
+      },
+    };
+  };
+
   return {
     fetch,
     parseHtml,
@@ -403,5 +441,7 @@ export function createCs3Runtime(client?: HttpClient): Cs3Runtime {
     base64Encode,
     unpackJs,
     TvType: tvTypeMirror,
+    scoreFromFloat,
+    scoreFromInt,
   };
 }

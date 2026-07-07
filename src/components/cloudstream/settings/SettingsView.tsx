@@ -849,6 +849,7 @@ function DownloadsSection() {
 
 function ExtensionsSection() {
   const { toast } = useToast();
+  const setView = useAppStore((s) => s.setView);
 
   const providers = useMemo(() => APIHolder.getAllProviders(), []);
   // Lazy-init from localStorage via useState initializer — avoids the
@@ -932,6 +933,26 @@ function ExtensionsSection() {
       description="Enabled providers and extension repositories"
       Icon={Library}
     >
+      {/* Manage Extensions launcher */}
+      <div className="mb-3 flex items-center justify-between gap-3 rounded-md border border-[#7664ed]/30 bg-[#7664ed]/5 p-3">
+        <div className="min-w-0 flex-1">
+          <p className="text-sm font-medium text-white">Manage Extensions</p>
+          <p className="mt-0.5 text-xs text-[#a0a0a0]">
+            Add repositories, browse and install plugins, toggle providers on
+            or off — just like the Android app&apos;s Extensions screen.
+          </p>
+        </div>
+        <Button
+          type="button"
+          onClick={() => setView("extensions")}
+          className="shrink-0 gap-1.5 bg-[#7664ed] hover:bg-[#7664ed]/90"
+        >
+          <ExternalLink className="size-4" />
+          <span className="hidden sm:inline">Open</span>
+          <span className="sm:hidden">→</span>
+        </Button>
+      </div>
+
       {providers.length === 0 ? (
         <div className="rounded-md border border-dashed border-[#3d3d3d] p-6 text-center">
           <p className="text-sm text-[#a0a0a0]">

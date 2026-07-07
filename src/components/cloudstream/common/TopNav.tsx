@@ -6,6 +6,7 @@ import {
   Search as SearchIcon,
   Library as LibraryIcon,
   Settings as SettingsIcon,
+  Puzzle as PuzzleIcon,
   ChevronDown,
   Check,
   Cloud,
@@ -44,6 +45,7 @@ const NAV_ITEMS: { view: AppView; label: string; Icon: typeof HomeIcon }[] = [
   { view: "home", label: "Home", Icon: HomeIcon },
   { view: "search", label: "Search", Icon: SearchIcon },
   { view: "library", label: "Library", Icon: LibraryIcon },
+  { view: "extensions", label: "Extensions", Icon: PuzzleIcon },
   { view: "settings", label: "Settings", Icon: SettingsIcon },
 ];
 

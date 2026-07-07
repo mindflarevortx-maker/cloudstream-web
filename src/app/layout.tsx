@@ -28,7 +28,11 @@ export const metadata: Metadata = {
   ],
   authors: [{ name: "recloudstream" }],
   icons: {
-    icon: "/favicon.ico",
+    icon: [
+      { url: "/cloudstream-logo.png", type: "image/png", sizes: "192x192" },
+    ],
+    apple: [{ url: "/cloudstream-logo.png", sizes: "192x192" }],
+    shortcut: ["/cloudstream-logo.png"],
   },
   openGraph: {
     title: "CloudStream Web",

@@ -201,4 +201,13 @@ export class APIHolder {
   static getEnabledProviders(): MainAPI[] {
     return APIHolder.getAllProviders();
   }
+
+  /** Unregister a provider by name (mirrors Android's plugin unload path). */
+  static unregisterProvider(name: string): boolean {
+    const provider = APIHolder.providerMap.get(name);
+    if (!provider) return false;
+    APIHolder.providerMap.delete(name);
+    APIHolder.providers = APIHolder.providers.filter((p) => p.name !== name);
+    return true;
+  }
 }

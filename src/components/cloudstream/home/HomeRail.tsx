@@ -67,7 +67,7 @@ export function HomeRail({ title, items, onMore, className }: HomeRailProps) {
       className={cn("group/rail relative py-2", className)}
       aria-label={title}
     >
-      {/* Title row */}
+      {/* Title row: title on left, count + "see all" affordance on right */}
       <div className="flex items-baseline justify-between gap-2 px-4 pb-2">
         <button
           type="button"
@@ -82,9 +82,30 @@ export function HomeRail({ title, items, onMore, className }: HomeRailProps) {
         >
           {title}
         </button>
-        <span className="shrink-0 text-xs font-medium text-[#a0a0a0]">
-          {items.length} {items.length === 1 ? "title" : "titles"}
-        </span>
+        <div className="flex items-center gap-2">
+          <span className="shrink-0 text-xs font-medium text-[#a0a0a0]">
+            {items.length} {items.length === 1 ? "title" : "titles"}
+          </span>
+          {/* "See all" affordance — visual for now; if `onMore` is provided,
+              clicking it dispatches to that handler (mirrors the Android
+              "more" arrow that opens a bottom-sheet with the full list). */}
+          <button
+            type="button"
+            onClick={onMore}
+            disabled={!onMore}
+            aria-label={`See all ${title}`}
+            className={cn(
+              "flex items-center gap-0.5 rounded px-1 py-0.5 text-xs font-medium",
+              "text-[#a0a0a0] transition-colors",
+              onMore
+                ? "hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-[#7664ed]/60"
+                : "cursor-default opacity-60"
+            )}
+          >
+            <span className="hidden sm:inline">See all</span>
+            <ChevronRight className="size-4" />
+          </button>
+        </div>
       </div>
 
       {/* Rail container with arrows */}

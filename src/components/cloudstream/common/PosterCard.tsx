@@ -12,15 +12,26 @@ import { useAppStore } from "@/lib/cloudstream/store/app-store";
 /**
  * PosterCard — a single poster tile for a SearchResponse.
  *
- * Mirrors the Android `search_result_grid.xml` layout:
- *   - 2:3 aspect-ratio poster image
- *   - quality badge (top-left) and dub/sub badges if present
- *   - score badge (top-right) shown as 0–10
- *   - title below the poster (clamped to 1 line)
- *   - hover effect: scale-up + play overlay
- *   - click → useAppStore.openResult(url, apiName)
+ * Mirrors the Android `search_result_grid.xml` layout (2:3 poster) and the
+ * `search_result_grid_wide.xml` layout (16:9 with progress bar) used by the
+ * "Continue Watching" rail.
  *
- * Responsive: the parent grid controls width; the card fills its column.
+ * Variants:
+ *   - variant="poster" (default) — 2:3 aspect, badges in corners, used by the
+ *     standard home rails and search grid.
+ *   - variant="wide" — 16:9 aspect (landscape thumbnail), optional progress
+ *     bar at the bottom for partially-watched items. Used by the Continue
+ *     Watching rail.
+ *
+ * Optional props:
+ *   - progress: 0..1 — only shown on the wide variant; renders a thin
+ *     accent-colored bar at the bottom of the thumbnail.
+ *   - onClick: overrides the default `openResult` click behavior (used by
+ *     the Continue Watching rail, which loads links + opens the player).
+ *   - subtitle: overrides the small text under the title (defaults to
+ *     `apiName`).
+ *
+ * Click behavior: by default calls `useAppStore.openResult(url, apiName)`.
  */
 
 const PLACEHOLDER_GRADIENTS = [
@@ -64,13 +75,21 @@ function tvTypeLabel(t: TvType): string | null {
   }
 }
 
-interface PosterCardProps {
+export interface PosterCardProps {
   searchResponse: SearchResponse;
   /** Optional fixed width — otherwise the card fills its grid cell. */
   width?: number | string;
   className?: string;
-  /** Show the type chip (defaults to true). */
+  /** Show the type chip (defaults to true; ignored for wide variant). */
   showType?: boolean;
+  /** Layout variant. Default "poster" (2:3). "wide" → 16:9 + progress bar. */
+  variant?: "poster" | "wide";
+  /** Watch progress 0..1 — only rendered on the wide variant. */
+  progress?: number;
+  /** Override the default openResult click behavior. */
+  onClick?: () => void;
+  /** Override the small subtitle text under the title. Defaults to apiName. */
+  subtitle?: string;
 }
 
 function PosterCardImpl({
@@ -78,37 +97,50 @@ function PosterCardImpl({
   width,
   className,
   showType = true,
+  variant = "poster",
+  progress,
+  onClick,
+  subtitle,
 }: PosterCardProps) {
   const openResult = useAppStore((s) => s.openResult);
   const [imgError, setImgError] = useState(false);
   const [imgLoaded, setImgLoaded] = useState(false);
 
-  const { name, posterUrl, url, apiName, type, quality, score } = searchResponse;
+  const { name, posterUrl, backgroundUrl, url, apiName, type, quality, score } =
+    searchResponse;
   const scoreStr = formatScore(score);
   const typeLabel = showType ? tvTypeLabel(type) : null;
-  const hasPoster = Boolean(posterUrl) && !imgError;
+  const isWide = variant === "wide";
+  // For the wide variant prefer a landscape backgroundUrl if available —
+  // providers often ship 16:9 backdrops alongside 2:3 posters.
+  const imgSrc = isWide ? (backgroundUrl || posterUrl) : posterUrl;
+  const hasPoster = Boolean(imgSrc) && !imgError;
+  const pct = Math.max(0, Math.min(1, progress ?? 0));
+  const showProgress = isWide && typeof progress === "number" && pct > 0;
+  const aspectClass = isWide ? "16 / 9" : "2 / 3";
+
+  const handleClick = onClick ?? (() => openResult(url, apiName));
 
   return (
     <motion.button
       type="button"
-      onClick={() => openResult(url, apiName)}
+      onClick={handleClick}
       whileHover={{ scale: 1.04 }}
       whileTap={{ scale: 0.98 }}
       transition={{ type: "spring", stiffness: 400, damping: 30 }}
       className={cn(
-        "group relative flex flex-col text-left",
+        "group relative flex flex-col text-left rounded-md",
         "focus:outline-none focus-visible:ring-2 focus-visible:ring-[#7664ed]/60 focus-visible:ring-offset-2 focus-visible:ring-offset-[#1e1e1e]",
-        "rounded-md",
         className
       )}
-      style={width ? { width } : undefined}
+      style={{ ...(width ? { width } : {}) }}
       aria-label={`Open ${name}`}
       title={name}
     >
-      {/* Poster frame (2:3) */}
+      {/* Poster / thumbnail frame */}
       <div
         className="relative w-full overflow-hidden rounded-md bg-[#2d2d2d] ring-1 ring-[#3d3d3d]/60 transition-shadow group-hover:ring-[#7664ed]/50 group-hover:shadow-lg group-hover:shadow-[#7664ed]/20"
-        style={{ aspectRatio: "2 / 3" }}
+        style={{ aspectRatio: aspectClass }}
       >
         {/* Placeholder gradient (visible while loading / on image error) */}
         {!imgLoaded && (
@@ -122,10 +154,14 @@ function PosterCardImpl({
         {/* Poster image */}
         {hasPoster && (
           <Image
-            src={posterUrl!}
+            src={imgSrc!}
             alt={name}
             fill
-            sizes="(max-width: 640px) 50vw, (max-width: 1024px) 25vw, 16vw"
+            sizes={
+              isWide
+                ? "(max-width: 640px) 80vw, (max-width: 1024px) 40vw, 22vw"
+                : "(max-width: 640px) 50vw, (max-width: 1024px) 25vw, 16vw"
+            }
             className={cn(
               "object-cover transition-opacity duration-300",
               imgLoaded ? "opacity-100" : "opacity-0"
@@ -140,26 +176,31 @@ function PosterCardImpl({
         {/* Bottom gradient overlay for readability of badges */}
         <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/70 via-black/0 to-black/30 opacity-80" />
 
-        {/* Top-left badges: quality + type */}
-        <div className="absolute left-1.5 top-1.5 flex flex-wrap gap-1">
-          {quality && (
-            <span className="rounded bg-[#3700B3]/90 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-[#BEC8FF] shadow-sm">
-              {quality}
-            </span>
-          )}
-          {typeLabel && (
-            <span className="rounded bg-black/70 px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide text-white/90 shadow-sm">
-              {typeLabel}
-            </span>
-          )}
-        </div>
+        {/* Badges — poster variant only (keeps the wide variant clean) */}
+        {!isWide && (
+          <>
+            {/* Top-left: quality + type */}
+            <div className="absolute left-1.5 top-1.5 flex flex-wrap gap-1">
+              {quality && (
+                <span className="rounded bg-[#3700B3]/90 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-[#BEC8FF] shadow-sm">
+                  {quality}
+                </span>
+              )}
+              {typeLabel && (
+                <span className="rounded bg-black/70 px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide text-white/90 shadow-sm">
+                  {typeLabel}
+                </span>
+              )}
+            </div>
 
-        {/* Top-right: score */}
-        {scoreStr && (
-          <div className="absolute right-1.5 top-1.5 flex items-center gap-0.5 rounded bg-black/70 px-1.5 py-0.5 text-[10px] font-semibold text-[#FFC107] shadow-sm">
-            <Star className="size-2.5 fill-current" />
-            <span>{scoreStr}</span>
-          </div>
+            {/* Top-right: score */}
+            {scoreStr && (
+              <div className="absolute right-1.5 top-1.5 flex items-center gap-0.5 rounded bg-black/70 px-1.5 py-0.5 text-[10px] font-semibold text-[#FFC107] shadow-sm">
+                <Star className="size-2.5 fill-current" />
+                <span>{scoreStr}</span>
+              </div>
+            )}
+          </>
         )}
 
         {/* Provider watermark (bottom-right) */}
@@ -173,9 +214,26 @@ function PosterCardImpl({
             <Play className="size-5 translate-x-0.5 fill-white text-white" />
           </div>
         </div>
+
+        {/* Progress bar — wide variant only */}
+        {showProgress && (
+          <div
+            className="absolute inset-x-0 bottom-0 h-1 bg-black/60"
+            role="progressbar"
+            aria-label="Watch progress"
+            aria-valuenow={Math.round(pct * 100)}
+            aria-valuemin={0}
+            aria-valuemax={100}
+          >
+            <div
+              className="h-full bg-[#7664ed] shadow-[0_0_6px_rgba(118,100,237,0.7)]"
+              style={{ width: `${Math.round(pct * 100)}%` }}
+            />
+          </div>
+        )}
       </div>
 
-      {/* Title */}
+      {/* Title + subtitle */}
       <div className="mt-2 px-0.5">
         <h3
           className="line-clamp-1 text-sm font-medium leading-tight text-white transition-colors group-hover:text-[#BEC8FF]"
@@ -183,7 +241,9 @@ function PosterCardImpl({
         >
           {name}
         </h3>
-        <p className="mt-0.5 line-clamp-1 text-[11px] text-[#a0a0a0]">{apiName}</p>
+        <p className="mt-0.5 line-clamp-1 text-[11px] text-[#a0a0a0]">
+          {subtitle ?? apiName}
+        </p>
       </div>
     </motion.button>
   );

@@ -13,6 +13,7 @@ import { ResultView } from "@/components/cloudstream/result/ResultView";
 import { PlayerContainer } from "@/components/cloudstream/player/PlayerContainer";
 import { LibraryView } from "@/components/cloudstream/library/LibraryView";
 import { SettingsView } from "@/components/cloudstream/settings/SettingsView";
+import { ExtensionsView } from "@/components/cloudstream/extensions/ExtensionsView";
 import { ThemeProvider } from "@/components/cloudstream/settings/ThemeProvider";
 
 /**
@@ -47,6 +48,7 @@ export default function Home() {
         {currentView === "result" && <ResultView />}
         {currentView === "library" && <LibraryView />}
         {currentView === "settings" && <SettingsView />}
+        {currentView === "extensions" && <ExtensionsView />}
       </AppShell>
       <PlayerContainer />
     </ThemeProvider>
